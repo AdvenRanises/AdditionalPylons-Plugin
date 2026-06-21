@@ -5,7 +5,6 @@ using System.IO;
 using System.Reflection;
 using Terraria;
 using Terraria.GameContent;
-using Terraria.GameContent.NetModules;
 using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 using Terraria.Localization;
@@ -143,32 +142,21 @@ namespace AdditionalPylons
                         {
                             if (e.Player.HasPermission("additionalpylons.inf"))
                             {
-                                // Broadcast the placed tiles to all clients
-                                TSPlayer.All.SendTileRect((short)e.TileX, (short)e.TileY, (byte)e.Width, (byte)e.Length);
-
-                                // Notify clients about the new pylon via NetTeleportPylonModule
-                                try
+                                // Apply tiles to world exactly like TShock's SendTileRectHandler does
+                                for (int px = 0; px < e.Width; px++)
                                 {
-                                    var pylonInfo = new TeleportPylonInfo
+                                    for (int py = 0; py < e.Length; py++)
                                     {
-                                        XPosition = e.TileX + x,
-                                        YPosition = e.TileY + y,
-                                        Type = (TeleportPylonType)Main.tile[e.TileX + x, e.TileY + y].frameX
-                                    };
+                                        Main.tile[e.TileX + px, e.TileY + py].active(active: true);
+                                        Main.tile[e.TileX + px, e.TileY + py].type = tiles[px, py].Type;
+                                        Main.tile[e.TileX + px, e.TileY + py].frameX = tiles[px, py].FrameX;
+                                        Main.tile[e.TileX + px, e.TileY + py].frameY = tiles[px, py].FrameY;
+                                    }
+                                }
 
-                                    NetMessage.SendData(
-                                        (int)PacketTypes.LoadNetModule,
-                                        -1,
-                                        -1,
-                                        NetworkText.Empty,
-                                        NetTeleportPylonModule.SerializePylonPlacements(pylonInfo)
-                                    );
-                                }
-                                catch
-                                {
-                                    // If TeleportPylonInfo or SerializePylonPlacements are unavailable,
-                                    // vanilla will still register the pylon through PlaceTileEntity
-                                }
+                                // Frame and sync to all clients — same as TShock's FrameAndSyncRect()
+                                WorldGen.RangeFrame(e.TileX, e.TileY, e.TileX + e.Width, e.TileY + e.Length);
+                                TSPlayer.All.SendTileRect((short)e.TileX, (short)e.TileY, (byte)e.Width, (byte)e.Length);
 
                                 e.Handled = true;
                             }
