@@ -8,7 +8,6 @@ using Terraria.GameContent;
 using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 using Terraria.Localization;
-using Terraria.Net;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.Net;
@@ -38,7 +37,6 @@ namespace AdditionalPylons
             5653, // Aether Pylon
         };
 
-        // Reflection field for clearing pylons
         private static readonly FieldInfo? PylonsField = typeof(Main).GetProperty("PylonSystem")?.PropertyType
             .GetField("_pylons", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -121,9 +119,16 @@ namespace AdditionalPylons
             if (e.Width != 3 || e.Length != 4)
                 return;
 
+            if (!e.Player.HasPermission("additionalpylons.inf"))
+                return;
+
             try
             {
-                // Read all tiles from the stream using NetTile.Unpack (OTAPI 3 API)
+                // FIX #1: TShock's handler runs before ours and consumes the stream.
+                // Seek back to the beginning so we can read the tile data too.
+                if (e.Data.CanSeek)
+                    e.Data.Seek(0, SeekOrigin.Begin);
+
                 var tiles = new NetTile[e.Width, e.Length];
                 for (int x = 0; x < e.Width; x++)
                 {
@@ -140,26 +145,10 @@ namespace AdditionalPylons
                     {
                         if (tiles[x, y].Type == TileID.TeleportationPylon)
                         {
-                            if (e.Player.HasPermission("additionalpylons.inf"))
-                            {
-                                // Apply tiles to world exactly like TShock's SendTileRectHandler does
-                                for (int px = 0; px < e.Width; px++)
-                                {
-                                    for (int py = 0; py < e.Length; py++)
-                                    {
-                                        Main.tile[e.TileX + px, e.TileY + py].active(active: true);
-                                        Main.tile[e.TileX + px, e.TileY + py].type = tiles[px, py].Type;
-                                        Main.tile[e.TileX + px, e.TileY + py].frameX = tiles[px, py].FrameX;
-                                        Main.tile[e.TileX + px, e.TileY + py].frameY = tiles[px, py].FrameY;
-                                    }
-                                }
-
-                                // Frame and sync to all clients — same as TShock's FrameAndSyncRect()
-                                WorldGen.RangeFrame(e.TileX, e.TileY, e.TileX + e.Width, e.TileY + e.Length);
-                                TSPlayer.All.SendTileRect((short)e.TileX, (short)e.TileY, (byte)e.Width, (byte)e.Length);
-
-                                e.Handled = true;
-                            }
+                            // Re-broadcast to ensure all clients see the pylon
+                            WorldGen.RangeFrame(e.TileX, e.TileY, e.TileX + e.Width, e.TileY + e.Length);
+                            TSPlayer.All.SendTileRect((short)e.TileX, (short)e.TileY, (byte)e.Width, (byte)e.Length);
+                            e.Handled = true;
                             return;
                         }
                     }
@@ -167,7 +156,7 @@ namespace AdditionalPylons
             }
             catch
             {
-                // If NetTile parsing fails for any reason, let TShock handle the packet normally
+                // If we can't read the stream, let TShock's handling stand
             }
         }
     }
