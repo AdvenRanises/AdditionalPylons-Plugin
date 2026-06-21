@@ -1,0 +1,52 @@
+name: Build AdditionalPylons Plugin
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Download TShock 6.1.0
+      run: |
+        mkdir -p tshock
+        ASSET_URL=$(curl -s https://api.github.com/repos/Pryaxis/TShock/releases/tags/v6.1.0 | \
+          jq -r '.assets[] | select(.name | endswith(".zip")) | .browser_download_url' | head -1)
+        echo "Downloading TShock from: $ASSET_URL"
+        curl -L -o tshock/tshock.zip "$ASSET_URL"
+        unzip -q tshock/tshock.zip -d tshock/extracted/
+        echo "Extracted files:"
+        find tshock/extracted/ -type f | head -30
+    
+    - name: Collect TShock Dependencies
+      run: |
+        mkdir -p libs
+        find tshock/extracted/ -name "OTAPI.dll" -exec cp {} libs/ \;
+        find tshock/extracted/ -name "TerrariaServer.dll" -exec cp {} libs/ \;
+        find tshock/extracted/ -name "TShockAPI.dll" -exec cp {} libs/ \;
+        echo "Dependencies collected:"
+        ls -la libs/
+    
+    - name: Restore & Build
+      run: |
+        dotnet restore AdditionalPylonsPlugin.csproj
+        dotnet build AdditionalPylonsPlugin.csproj -c Release --no-restore
+    
+    - name: Upload Plugin Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AdditionalPylonsPlugin-TShock6
+        path: bin/Release/net9.0/AdditionalPylonsPlugin.dll
+        if-no-files-found: error
