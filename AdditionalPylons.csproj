@@ -7,7 +7,8 @@
     <Version>2.0.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- IMPORTANT: You have Properties/AssemblyInfo.cs from old project, disable auto-gen -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,11 +16,23 @@
       <HintPath>libs\OTAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="TerrariaServer">
-      <HintPath>libs\TerrariaServer.dll</HintPath>
+    <Reference Include="TerrariaApi.Server" Condition="Exists('libs\TerrariaApi.Server.dll')">
+      <HintPath>libs\TerrariaApi.Server.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="TShockAPI">
+    <Reference Include="TSAPI" Condition="Exists('libs\TSAPI.dll')">
+      <HintPath>libs\TSAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TerrariaServer" Condition="Exists('libs\TerrariaServer.exe')">
+      <HintPath>libs\TerrariaServer.exe</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TShock.Server" Condition="Exists('libs\TShock.Server.dll')">
+      <HintPath>libs\TShock.Server.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TShockAPI" Condition="Exists('libs\TShockAPI.dll')">
       <HintPath>libs\TShockAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
