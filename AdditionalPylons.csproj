@@ -7,7 +7,6 @@
     <Version>2.0.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <!-- IMPORTANT: You have Properties/AssemblyInfo.cs from old project, disable auto-gen -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
@@ -34,6 +33,11 @@
     </Reference>
     <Reference Include="TShockAPI" Condition="Exists('libs\TShockAPI.dll')">
       <HintPath>libs\TShockAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- FIX: Add ModFramework reference -->
+    <Reference Include="ModFramework" Condition="Exists('libs\ModFramework.dll')">
+      <HintPath>libs\ModFramework.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
