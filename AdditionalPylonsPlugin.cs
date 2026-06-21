@@ -1,16 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using Terraria;
-using Terraria.GameContent;
 using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 using Terraria.Localization;
 using TerrariaApi.Server;
 using TShockAPI;
-using TShockAPI.Net;
 
 namespace AdditionalPylons
 {
@@ -46,7 +43,6 @@ namespace AdditionalPylons
         {
             GetDataHandlers.PlayerUpdate.Register(OnPlayerUpdate);
             GetDataHandlers.PlaceTileEntity.Register(OnPlaceTileEntity);
-            GetDataHandlers.SendTileRect.Register(OnSendTileRect);
         }
 
         protected override void Dispose(bool disposing)
@@ -55,7 +51,6 @@ namespace AdditionalPylons
             {
                 GetDataHandlers.PlayerUpdate.UnRegister(OnPlayerUpdate);
                 GetDataHandlers.PlaceTileEntity.UnRegister(OnPlaceTileEntity);
-                GetDataHandlers.SendTileRect.UnRegister(OnSendTileRect);
             }
             base.Dispose(disposing);
         }
@@ -67,7 +62,6 @@ namespace AdditionalPylons
 
             var item = e.Player.TPlayer.inventory[e.SelectedItem];
 
-            // Victory and Aether pylons don't need the limit bypassed
             if (item.type == ItemID.TeleportationPylonVictory || item.type == 5653)
                 return;
 
@@ -94,7 +88,6 @@ namespace AdditionalPylons
 
         private void OnPlaceTileEntity(object? sender, GetDataHandlers.PlaceTileEntityEventArgs e)
         {
-            // Type 7 = TETeleportationPylon
             if (e.Type != 7)
                 return;
 
@@ -110,53 +103,6 @@ namespace AdditionalPylons
                     e.Y,
                     7);
                 e.Handled = true;
-            }
-        }
-
-        private void OnSendTileRect(object? sender, GetDataHandlers.SendTileRectEventArgs e)
-        {
-            // Pylons are placed in a 3x4 tile rect
-            if (e.Width != 3 || e.Length != 4)
-                return;
-
-            if (!e.Player.HasPermission("additionalpylons.inf"))
-                return;
-
-            try
-            {
-                // FIX #1: TShock's handler runs before ours and consumes the stream.
-                // Seek back to the beginning so we can read the tile data too.
-                if (e.Data.CanSeek)
-                    e.Data.Seek(0, SeekOrigin.Begin);
-
-                var tiles = new NetTile[e.Width, e.Length];
-                for (int x = 0; x < e.Width; x++)
-                {
-                    for (int y = 0; y < e.Length; y++)
-                    {
-                        tiles[x, y] = new NetTile();
-                        tiles[x, y].Unpack(e.Data);
-                    }
-                }
-
-                for (int x = 0; x < e.Width; x++)
-                {
-                    for (int y = 0; y < e.Length; y++)
-                    {
-                        if (tiles[x, y].Type == TileID.TeleportationPylon)
-                        {
-                            // Re-broadcast to ensure all clients see the pylon
-                            WorldGen.RangeFrame(e.TileX, e.TileY, e.TileX + e.Width, e.TileY + e.Length);
-                            TSPlayer.All.SendTileRect((short)e.TileX, (short)e.TileY, (byte)e.Width, (byte)e.Length);
-                            e.Handled = true;
-                            return;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // If we can't read the stream, let TShock's handling stand
             }
         }
     }
