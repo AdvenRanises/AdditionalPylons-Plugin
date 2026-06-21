@@ -1,13 +1,18 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using Terraria;
+using Terraria.GameContent;
+using Terraria.GameContent.NetModules;
 using Terraria.GameContent.Tile_Entities;
 using Terraria.ID;
 using Terraria.Localization;
+using Terraria.Net;
 using TerrariaApi.Server;
 using TShockAPI;
+using TShockAPI.Net;
 
 namespace AdditionalPylons
 {
@@ -34,12 +39,17 @@ namespace AdditionalPylons
             5653, // Aether Pylon
         };
 
+        // Reflection field for clearing pylons
+        private static readonly FieldInfo? PylonsField = typeof(Main).GetProperty("PylonSystem")?.PropertyType
+            .GetField("_pylons", BindingFlags.NonPublic | BindingFlags.Instance);
+
         public AdditionalPylonsPlugin(Main game) : base(game) { }
 
         public override void Initialize()
         {
             GetDataHandlers.PlayerUpdate.Register(OnPlayerUpdate);
             GetDataHandlers.PlaceTileEntity.Register(OnPlaceTileEntity);
+            GetDataHandlers.SendTileRect.Register(OnSendTileRect);
         }
 
         protected override void Dispose(bool disposing)
@@ -48,6 +58,7 @@ namespace AdditionalPylons
             {
                 GetDataHandlers.PlayerUpdate.UnRegister(OnPlayerUpdate);
                 GetDataHandlers.PlaceTileEntity.UnRegister(OnPlaceTileEntity);
+                GetDataHandlers.SendTileRect.UnRegister(OnSendTileRect);
             }
             base.Dispose(disposing);
         }
@@ -75,14 +86,10 @@ namespace AdditionalPylons
         {
             try
             {
-                // Use reflection to avoid referencing the private TeleportPylonsSystem type
                 var pylonSystem = typeof(Main).GetProperty("PylonSystem")?.GetValue(null);
                 if (pylonSystem == null) return;
 
-                var pylonsField = pylonSystem.GetType().GetField("_pylons", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (pylonsField == null) return;
-
-                var pylons = pylonsField.GetValue(pylonSystem) as IList;
+                var pylons = PylonsField?.GetValue(pylonSystem) as IList;
                 pylons?.Clear();
             }
             catch { }
@@ -106,6 +113,73 @@ namespace AdditionalPylons
                     e.Y,
                     7);
                 e.Handled = true;
+            }
+        }
+
+        private void OnSendTileRect(object? sender, GetDataHandlers.SendTileRectEventArgs e)
+        {
+            // Pylons are placed in a 3x4 tile rect
+            if (e.Width != 3 || e.Length != 4)
+                return;
+
+            try
+            {
+                // Read all tiles from the stream using NetTile.Unpack (OTAPI 3 API)
+                var tiles = new NetTile[e.Width, e.Length];
+                for (int x = 0; x < e.Width; x++)
+                {
+                    for (int y = 0; y < e.Length; y++)
+                    {
+                        tiles[x, y] = new NetTile();
+                        tiles[x, y].Unpack(e.Data);
+                    }
+                }
+
+                for (int x = 0; x < e.Width; x++)
+                {
+                    for (int y = 0; y < e.Length; y++)
+                    {
+                        if (tiles[x, y].Type == TileID.TeleportationPylon)
+                        {
+                            if (e.Player.HasPermission("additionalpylons.inf"))
+                            {
+                                // Broadcast the placed tiles to all clients
+                                TSPlayer.All.SendTileRect((short)e.TileX, (short)e.TileY, (byte)e.Width, (byte)e.Length);
+
+                                // Notify clients about the new pylon via NetTeleportPylonModule
+                                try
+                                {
+                                    var pylonInfo = new TeleportPylonInfo
+                                    {
+                                        XPosition = e.TileX + x,
+                                        YPosition = e.TileY + y,
+                                        Type = (TeleportPylonType)Main.tile[e.TileX + x, e.TileY + y].frameX
+                                    };
+
+                                    NetMessage.SendData(
+                                        (int)PacketTypes.LoadNetModule,
+                                        -1,
+                                        -1,
+                                        NetworkText.Empty,
+                                        NetTeleportPylonModule.SerializePylonPlacements(pylonInfo)
+                                    );
+                                }
+                                catch
+                                {
+                                    // If TeleportPylonInfo or SerializePylonPlacements are unavailable,
+                                    // vanilla will still register the pylon through PlaceTileEntity
+                                }
+
+                                e.Handled = true;
+                            }
+                            return;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // If NetTile parsing fails for any reason, let TShock handle the packet normally
             }
         }
     }
