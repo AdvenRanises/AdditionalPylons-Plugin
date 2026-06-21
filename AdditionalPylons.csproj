@@ -1,10 +1,32 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <OutputType>Library</OutputType>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>AdditionalPylons</AssemblyName>
+    <RootNamespace>AdditionalPylons</RootNamespace>
+    <Version>2.0.0</Version>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <!-- Point these to your actual TShock 6.1 server files -->
   <ItemGroup>
-    <PackageReference Include="TShock" Version="5.1.3" />
+    <Reference Include="OTAPI">
+      <HintPath>..\..\TShock\OTAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TerrariaServer">
+      <HintPath>..\..\TShock\TerrariaServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TShockAPI">
+      <HintPath>..\..\TShock\ServerPlugins\TShockAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TerrariaApi.Server">
+      <HintPath>..\..\TShock\ServerPlugins\TerrariaServer.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
+
 </Project>
