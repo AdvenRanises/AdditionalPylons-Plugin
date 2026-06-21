@@ -17,7 +17,7 @@ namespace AdditionalPylons
         public override string Name => "AdditionalPylons";
         public override string Author => "ATSP / Updated for TShock 6.1";
         public override string Description => "Allows placing additional (infinite) pylons beyond Terraria's default limits.";
-        public override Version Version => Assembly.GetExecutingAssembly().GetName().Version;
+        public override Version Version => Assembly.GetExecutingAssembly().GetName().Version ?? new Version(2, 0, 0);
 
         private static readonly List<int> PylonItems = new()
         {
