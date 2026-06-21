@@ -10,15 +10,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup .NET 9
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-    
+
     - name: Download TShock 6.1.0
       run: |
         mkdir -p tshock
@@ -27,7 +27,7 @@ jobs:
         echo "Downloading TShock from: $ASSET_URL"
         curl -L -o tshock/tshock.zip "$ASSET_URL"
         unzip -q tshock/tshock.zip -d tshock/extracted/
-    
+
     - name: Collect TShock Dependencies
       run: |
         mkdir -p libs
@@ -35,12 +35,12 @@ jobs:
         find tshock/extracted/ -name "TerrariaServer.dll" -exec cp {} libs/ \;
         find tshock/extracted/ -name "TShockAPI.dll" -exec cp {} libs/ \;
         ls -la libs/
-    
+
     - name: Restore & Build
       run: |
-        dotnet restore additionalpylons.csproj
-        dotnet build additionalpylons.csproj -c Release --no-restore
-    
+        dotnet restore AdditionalPylons.csproj
+        dotnet build AdditionalPylons.csproj -c Release --no-restore
+
     - name: Upload Plugin Artifact
       uses: actions/upload-artifact@v4
       with:
