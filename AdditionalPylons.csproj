@@ -2,29 +2,31 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <AssemblyName>AdditionalPylons</AssemblyName>
+    <AssemblyName>AdditionalPylonsPlugin</AssemblyName>
     <RootNamespace>AdditionalPylons</RootNamespace>
     <Version>2.0.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
-  <!-- Point these to your actual TShock 6.1 server files -->
+  <!--
+    These references point to the libs/ folder that the GitHub Actions workflow
+    populates automatically from the TShock 6.1.0 release.
+    If building locally, copy OTAPI.dll, TerrariaServer.dll, and TShockAPI.dll
+    from your TShock server directory into a libs/ folder next to this .csproj.
+  -->
   <ItemGroup>
     <Reference Include="OTAPI">
-      <HintPath>..\..\TShock\OTAPI.dll</HintPath>
+      <HintPath>libs\OTAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="TerrariaServer">
-      <HintPath>..\..\TShock\TerrariaServer.dll</HintPath>
+      <HintPath>libs\TerrariaServer.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="TShockAPI">
-      <HintPath>..\..\TShock\ServerPlugins\TShockAPI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="TerrariaApi.Server">
-      <HintPath>..\..\TShock\ServerPlugins\TerrariaServer.dll</HintPath>
+      <HintPath>libs\TShockAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
